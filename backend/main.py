@@ -1,99 +1,163 @@
 import os
-import json
+from typing import List
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 from google import genai
+from google.genai import types
+
+
+# --------------------------------------------------
+# Environment
+# --------------------------------------------------
 
 load_dotenv()
 
-app = FastAPI(title="CareerTwin AI Backend")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-api_key = os.getenv("GEMINI_API_KEY")
-
-if not api_key:
-    raise RuntimeError("GEMINI_API_KEY is missing from .env")
-
-client = genai.Client(api_key=api_key)
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY is not set in backend/.env")
 
 
-class CareerRequest(BaseModel):
-    name: str
+# --------------------------------------------------
+# Gemini client
+# --------------------------------------------------
+
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+# Keep this configurable through .env.
+# Your previous Gemini model error recommended gemini-3.6-flash.
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+
+
+# --------------------------------------------------
+# FastAPI
+# --------------------------------------------------
+
+app = FastAPI(
+    title="CareerTwin AI Backend",
+    description="Gemini-powered CareerTwin career analysis API",
+    version="1.0.0",
+)
+
+
+# --------------------------------------------------
+# CORS
+# --------------------------------------------------
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# --------------------------------------------------
+# Request model
+# --------------------------------------------------
+
+class ProfileRequest(BaseModel):
+    name: str = ""
     current_role: str
     skills: str
-    experience: str
+    experience: str = ""
     career_goal: str
 
 
+# --------------------------------------------------
+# Response model
+# --------------------------------------------------
+
+class AnalysisResponse(BaseModel):
+    match_score: int = Field(ge=0, le=100)
+    strengths: List[str]
+    skill_gaps: List[str]
+    roadmap: List[str]
+
+
+# --------------------------------------------------
+# Health check
+# --------------------------------------------------
+
 @app.get("/")
-def home():
+async def root():
     return {
         "status": "online",
-        "message": "CareerTwin AI Backend is running"
+        "service": "CareerTwin AI Backend",
+        "ai": "Google Gemini",
+        "model": GEMINI_MODEL,
     }
 
 
-@app.post("/analyze")
-def analyze_career(request: CareerRequest):
+# --------------------------------------------------
+# Analyze career profile
+# --------------------------------------------------
+
+@app.post("/analyze", response_model=AnalysisResponse)
+async def analyze_profile(payload: ProfileRequest):
 
     prompt = f"""
-You are CareerTwin, an expert AI career advisor.
+You are CareerTwin, an AI Career Architect.
 
-Analyze this person's career profile:
+Analyze the following professional profile and determine how ready
+the person is for their career goal.
 
-Name: {request.name}
-Current role or education: {request.current_role}
-Skills: {request.skills}
-Experience level: {request.experience}
-Target career: {request.career_goal}
+PROFILE
 
-The target career can be ANY career that exists today or may emerge
-in the future. It can be technical, non-technical, creative,
-scientific, medical, business, professional, or any other field.
+Name:
+{payload.name}
 
-Determine:
+Current Role:
+{payload.current_role}
 
-1. A realistic career match score from 0 to 100.
-2. The user's strongest relevant skills.
-3. The most important missing skills or competencies.
-4. A personalized step-by-step roadmap.
-5. A concise recommendation for the user's next step.
+Skills:
+{payload.skills}
 
-Return ONLY valid JSON in exactly this structure:
+Experience:
+{payload.experience}
 
-{{
-    "match_score": 0,
-    "strengths": [],
-    "skill_gaps": [],
-    "roadmap": [],
-    "recommendation": ""
-}}
+Career Goal:
+{payload.career_goal}
+
+Your analysis must:
+
+1. Calculate a realistic match score from 0 to 100.
+2. Identify the person's strongest existing skills or advantages.
+3. Identify the most important missing skills.
+4. Create a practical learning roadmap to move from the current role
+   toward the target career.
+
+Be specific and practical.
+
+Return ONLY valid JSON matching the requested response schema.
 """
+
 
     try:
         response = client.models.generate_content(
-           model="gemini-3.6-flash",
-            contents=prompt
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=AnalysisResponse,
+                temperature=0.2,
+            ),
         )
 
-        result_text = response.text.strip()
+        # The Gemini SDK provides the generated text here.
+        raw_text = response.text
 
-        if result_text.startswith("```"):
-            result_text = result_text.replace("```json", "").replace("```", "").strip()
+        if not raw_text:
+            raise ValueError("Gemini returned an empty response")
 
-        result = json.loads(result_text)
-
-        return result
-
-    except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=500,
-            detail="Gemini returned invalid JSON."
-        )
+        return AnalysisResponse.model_validate_json(raw_text)
 
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            detail=f"Gemini error: {str(e)}",
         )

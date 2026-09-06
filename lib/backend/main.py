@@ -1,68 +1,62 @@
 import os
-from pathlib import Path
+from typing import List
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
 
-# Locate and load .env relative to this file's folder
-env_path = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=env_path)
+# Load environment variables
+load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    raise RuntimeError("GEMINI_API_KEY is missing from .env")
+    raise RuntimeError("GEMINI_API_KEY is not set in backend/.env")
 
 client = genai.Client(api_key=api_key)
 
-app = FastAPI(title="CareerTwin AI Backend")
+# ----------------- FastAPI Setup -----------------
+app = FastAPI(title="CareerTwin Backend API")
 
-# Allow all origins (including any localhost port used by Flutter Web)
+# CORSMiddleware handles preflight requests automatically
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://.*",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,  # must be False when using "*"
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
+# ----------------- Models -----------------
 class ProfileRequest(BaseModel):
-    name: str
     current_role: str
-    skills: str
-    experience: str
-    career_goal: str
+    target_role: str
+    skills: List[str]
 
-class CareerAnalysisResponse(BaseModel):
+class AnalysisResponse(BaseModel):
     match_score: int
-    strengths: list[str]
-    skill_gaps: list[str]
-    roadmap: list[str]
-    recommendation: str
+    missing_skills: List[str]
+    recommended_projects: List[str]
+    learning_roadmap: List[str]
+    summary: str
 
+# ----------------- Routes -----------------
 @app.get("/")
-def root():
-    return {"status": "online", "message": "CareerTwin AI Backend is running"}
+def health_check():
+    return {"status": "healthy"}
 
-@app.post("/analyze", response_model=CareerAnalysisResponse)
-def analyze_career(profile: ProfileRequest):
+@app.post("/analyze", response_model=AnalysisResponse)
+async def analyze_profile(payload: ProfileRequest):
+    if not payload.skills:
+        raise HTTPException(status_code=400, detail="At least one skill required.")
+
     prompt = f"""
-    Analyze the career trajectory for this candidate against standard industry benchmarks:
-    - Name: {profile.name}
-    - Current Role / Education: {profile.current_role}
-    - Existing Skills: {profile.skills}
-    - Experience Level: {profile.experience}
-    - Target Career Goal: {profile.career_goal}
-
-    Evaluate:
-    1. match_score: A realistic match percentage integer (0 to 100).
-    2. strengths: A list of 3-5 existing skills or attributes relevant to the target career.
-    3. skill_gaps: A list of 3-5 critical missing technical/practical skills.
-    4. roadmap: Exactly 5 progressive milestone steps to achieve this career.
-    5. recommendation: A clear, high-impact tactical piece of advice.
+    Current Role: {payload.current_role}
+    Target Role: {payload.target_role}
+    Current Skills: {', '.join(payload.skills)}
+    
+    Evaluate career readiness, provide a match score (0-100), missing skills, 2-3 portfolio projects, and a chronological roadmap.
     """
 
     try:
@@ -71,12 +65,14 @@ def analyze_career(profile: ProfileRequest):
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_schema=CareerAnalysisResponse,
+                response_schema=AnalysisResponse,
                 temperature=0.2,
             ),
         )
 
-        return CareerAnalysisResponse.model_validate_json(response.text)
+        # Extract JSON safely from Gemini response
+        raw_text = response.candidates[0].content.parts[0].text
+        return AnalysisResponse.model_validate_json(raw_text)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Gemini error: {str(e)}")

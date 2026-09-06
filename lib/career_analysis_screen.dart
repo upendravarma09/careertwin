@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+
 import 'api_service.dart';
 
 class CareerAnalysisScreen extends StatelessWidget {
   final String careerGoal;
   final CareerAnalysisResult analysis;
-
   const CareerAnalysisScreen({
     super.key,
     required this.careerGoal,
@@ -16,7 +16,10 @@ class CareerAnalysisScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('CareerTwin Analysis', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'CareerTwin Analysis',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -95,7 +98,11 @@ class CareerAnalysisScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   careerGoal,
-                  style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -109,7 +116,11 @@ class CareerAnalysisScreen extends StatelessWidget {
             ),
             child: Text(
               "${analysis.matchScore}%",
-              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -128,15 +139,33 @@ class CareerAnalysisScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.lightbulb_outline, color: Color(0xFFFACC15), size: 28),
+          const Icon(
+            Icons.lightbulb_outline,
+            color: Color(0xFFFACC15),
+            size: 28,
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("AI Recommendation", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  "AI Recommendation",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(analysis.recommendation, style: const TextStyle(color: Colors.white70, height: 1.4, fontSize: 14)),
+                Text(
+                  analysis.recommendation,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    height: 1.4,
+                    fontSize: 14,
+                  ),
+                ),
               ],
             ),
           ),
@@ -165,28 +194,47 @@ class CareerAnalysisScreen extends StatelessWidget {
             children: [
               Icon(icon, color: color, size: 20),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
-          ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 6),
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 6),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(item, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.3)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        height: 1.3,
+                      ),
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -207,7 +255,14 @@ class CareerAnalysisScreen extends StatelessWidget {
             children: [
               Icon(Icons.alt_route_rounded, color: Color(0xFF6366F1), size: 22),
               SizedBox(width: 8),
-              Text("Career Roadmap", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                "Career Roadmap",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -224,12 +279,23 @@ class CareerAnalysisScreen extends StatelessWidget {
                     backgroundColor: const Color(0xFF6366F1).withAlpha(51),
                     child: Text(
                       "$idx",
-                      style: const TextStyle(color: Color(0xFF818CF8), fontSize: 12, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Color(0xFF818CF8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(step, style: const TextStyle(color: Colors.white, height: 1.3, fontSize: 14)),
+                    child: Text(
+                      step,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        height: 1.3,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ],
               ),

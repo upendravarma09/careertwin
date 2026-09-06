@@ -5,6 +5,6 @@ void main() {
   testWidgets('CareerTwin starts', (WidgetTester tester) async {
     await tester.pumpWidget(const CareerTwinApp());
 
-    expect(find.text('Let\'s build your CareerTwin'), findsOneWidget);
+    expect(find.text('CareerTwin // AI Career Architect'), findsOneWidget);
   });
 }
