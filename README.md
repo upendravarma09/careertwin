@@ -1,17 +1,12 @@
-# career_twin
+## CareerTwin 🎯 // AI Career Architect
 
-A new Flutter project.
+> An end-to-end full-stack web application that performs automated career skill-gap analyses, synthesizes personalized readiness scores, and generates actionable learning roadmaps using Google Gemini.
 
-## Getting Started
+[![Live Demo](https://img.shields.io/badge/Demo-Firebase%20Hosting-FFCA28?logo=firebase&logoColor=black)](https://careertwin-ai.web.app)
+[![API Status](https://img.shields.io/badge/Backend-Render%20Cloud-46E3B7?logo=render&logoColor=white)](https://careertwin-backend-6gxx.onrender.com)
+[![Flutter](https://img.shields.io/badge/Frontend-Flutter%20Web-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🏛 System Architecture
