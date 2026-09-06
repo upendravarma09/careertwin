@@ -176,104 +176,120 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
         ],
       ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left Sidebar Form
-          SizedBox(
-            width: 400,
-            child: Card(
-              margin: const EdgeInsets.all(16),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                side: BorderSide(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: _formKey,
-                  child: ListView(
-                    children: [
-                      Text(
-                        'Profile Parameters',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _currentRoleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Current Role',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person_outline),
-                        ),
-                        validator: (v) => v == null || v.isEmpty
-                            ? 'Current role required'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _targetRoleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Target Role',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.ads_click),
-                        ),
-                        validator: (v) => v == null || v.isEmpty
-                            ? 'Target role required'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _skillsController,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          labelText: 'Skills (comma separated)',
-                          hintText: 'e.g. Flutter, Dart, Python, SQL',
-                          border: OutlineInputBorder(),
-                          alignLabelWithHint: true,
-                        ),
-                        validator: (v) => v == null || v.isEmpty
-                            ? 'List at least one skill'
-                            : null,
-                      ),
-                      const SizedBox(height: 24),
-                      FilledButton.icon(
-                        onPressed: _isLoading ? null : _handleAnalyze,
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                        ),
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.bolt),
-                        label: Text(
-                          _isLoading
-                              ? 'Generating Roadmap...'
-                              : 'Analyze Readiness',
-                        ),
-                      ),
-                    ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 850;
+
+          if (isWide) {
+            // Desktop: Two-column layout
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 400,
+                  child: SingleChildScrollView(child: _buildFormCard()),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
+                    child: _buildRightPane(),
                   ),
                 ),
-              ),
-            ),
-          ),
+              ],
+            );
+          } else {
+            // Mobile/Tablet: Stack vertically
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _buildFormCard(),
+                const SizedBox(height: 16),
+                _buildRightPane(),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
 
-          // Right Output Pane
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
-              child: _buildRightPane(),
-            ),
+  Widget _buildFormCard() {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Profile Parameters',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _currentRoleController,
+                decoration: const InputDecoration(
+                  labelText: 'Current Role',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Current role required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _targetRoleController,
+                decoration: const InputDecoration(
+                  labelText: 'Target Role',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.ads_click),
+                ),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Target role required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _skillsController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Skills (comma separated)',
+                  hintText: 'e.g. Flutter, Dart, Python, SQL',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'List at least one skill' : null,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _isLoading ? null : _handleAnalyze,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                ),
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.bolt),
+                label: Text(
+                  _isLoading ? 'Generating Roadmap...' : 'Analyze Readiness',
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -281,13 +297,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildRightPane() {
     if (_isLoading) {
       return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Synthesizing career gap analysis with Gemini...'),
-          ],
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Synthesizing career gap analysis with Gemini...'),
+            ],
+          ),
         ),
       );
     }
@@ -322,16 +341,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (_analysisResult == null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.insights, size: 64, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            Text(
-              'Fill in your background on the left and run analysis.',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.insights, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 12),
+              Text(
+                'Fill in your background on the left and run analysis.',
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -339,6 +361,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final res = _analysisResult!;
 
     return ListView(
+      shrinkWrap: true,
+      physics: const ClampingScrollPhysics(),
       children: [
         // Score Card
         Card(

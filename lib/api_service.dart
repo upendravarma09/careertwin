@@ -13,12 +13,13 @@ class CareerProfile {
     required this.skills,
   });
 
-  Map<String, dynamic> toJson() => {
-    'current_role': currentRole,
-    'career_goal': targetRole, // Satisfies backend "career_goal" field
-    'target_role': targetRole, // Kept for compatibility
-    'skills': skills, // Sent as a plain String
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'current_role': currentRole,
+      'target_role': targetRole,
+      'skills': skills,
+    };
+  }
 }
 
 class AnalysisResult {
@@ -37,31 +38,14 @@ class AnalysisResult {
   });
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
-    // Helper to safely parse lists even if backend returns them as strings or null
-    List<String> parseList(dynamic field) {
-      if (field == null) return [];
-      if (field is List) return field.map((e) => e.toString()).toList();
-      if (field is String) {
-        return field
-            .split(',')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
-      }
-      return [];
-    }
-
     return AnalysisResult(
-      matchScore: json['match_score'] is int
-          ? json['match_score'] as int
-          : int.tryParse(json['match_score']?.toString() ?? '0') ?? 0,
-      missingSkills: parseList(json['missing_skills']),
-      recommendedProjects: parseList(json['recommended_projects']),
-      learningRoadmap: parseList(json['learning_roadmap']),
-      summary:
-          json['summary']?.toString() ??
-          json['recommendations']?.toString() ??
-          'No summary available.',
+      matchScore: json['match_score'] ?? 0,
+      missingSkills: List<String>.from(json['missing_skills'] ?? []),
+      recommendedProjects: List<String>.from(
+        json['recommended_projects'] ?? [],
+      ),
+      learningRoadmap: List<String>.from(json['learning_roadmap'] ?? []),
+      summary: json['summary'] ?? '',
     );
   }
 
@@ -73,27 +57,19 @@ class AnalysisResult {
     buffer.writeln('# CareerTwin Transition Report');
     buffer.writeln('**Current Role:** $currentRole');
     buffer.writeln('**Target Role:** $targetRole');
-    buffer.writeln('**Readiness Score:** $matchScore%\n');
+    buffer.writeln('**Readiness Match Score:** $matchScore%\n');
     buffer.writeln('## Summary\n$summary\n');
-    if (missingSkills.isNotEmpty) {
-      buffer.writeln('## Missing Skills');
-      for (var s in missingSkills) {
-        buffer.writeln('- $s');
-      }
-      buffer.writeln();
+    buffer.writeln('## Missing Skills');
+    for (final skill in missingSkills) {
+      buffer.writeln('- $skill');
     }
-    if (recommendedProjects.isNotEmpty) {
-      buffer.writeln('## Recommended Projects');
-      for (var p in recommendedProjects) {
-        buffer.writeln('- $p');
-      }
-      buffer.writeln();
+    buffer.writeln('\n## Recommended Projects');
+    for (final project in recommendedProjects) {
+      buffer.writeln('- $project');
     }
-    if (learningRoadmap.isNotEmpty) {
-      buffer.writeln('## Learning Roadmap');
-      for (var i = 0; i < learningRoadmap.length; i++) {
-        buffer.writeln('${i + 1}. ${learningRoadmap[i]}');
-      }
+    buffer.writeln('\n## Learning Roadmap');
+    for (int i = 0; i < learningRoadmap.length; i++) {
+      buffer.writeln('${i + 1}. ${learningRoadmap[i]}');
     }
     return buffer.toString();
   }
@@ -122,14 +98,14 @@ class CareerAnalysisResult {
       strengths: List<String>.from(json['strengths'] ?? []),
       skillGaps: List<String>.from(json['skill_gaps'] ?? []),
       roadmap: List<String>.from(json['roadmap'] ?? []),
-      recommendation: json['recommendation'] as String? ?? '',
+      recommendation: json['recommendation']?.toString() ?? '',
     );
   }
 }
 
 class ApiService {
-  // Uses 127.0.0.1 to match your active backend server address
-  static const String _baseUrl = 'http://127.0.0.1:8000';
+  // Your live Render backend URL
+  static const String _baseUrl = 'https://careertwin-backend-6gxx.onrender.com';
 
   static Future<CareerAnalysisResult> analyzeCareer({
     required String name,
@@ -167,6 +143,7 @@ class ApiService {
           throw Exception(errorBody['detail']);
         }
       } catch (_) {}
+
       throw Exception(
         'Server returned status code ${response.statusCode}: ${response.body}',
       );
@@ -178,31 +155,19 @@ class ApiService {
   Future<AnalysisResult> sendProfile(CareerProfile profile) async {
     final url = Uri.parse('$_baseUrl/analyze');
 
-    try {
-      final response = await http
-          .post(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(profile.toJson()),
-          )
-          .timeout(const Duration(seconds: 45));
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(profile.toJson()),
+    );
 
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-        return AnalysisResult.fromJson(decoded);
-      } else {
-        try {
-          final errorBody = jsonDecode(response.body);
-          if (errorBody is Map && errorBody.containsKey('detail')) {
-            throw Exception(errorBody['detail']);
-          }
-        } catch (_) {}
-        throw Exception(
-          'Server returned status code ${response.statusCode}: ${response.body}',
-        );
-      }
-    } catch (e) {
-      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return AnalysisResult.fromJson(data);
+    } else {
+      throw Exception(
+        'Server returned status code ${response.statusCode}: ${response.body}',
+      );
     }
   }
 }
