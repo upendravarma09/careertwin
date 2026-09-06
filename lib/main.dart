@@ -1,9 +1,13 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const CareerTwinApp());
 }
 
@@ -36,20 +40,71 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _currentRoleController = TextEditingController(
-    text: 'Junior Frontend Developer',
-  );
-  final _targetRoleController = TextEditingController(
-    text: 'Full Stack Engineer',
-  );
-  final _skillsController = TextEditingController(
-    text: 'HTML, CSS, JavaScript, React, Git',
-  );
+  final _currentRoleController = TextEditingController();
+  final _targetRoleController = TextEditingController();
+  final _skillsController = TextEditingController();
 
   final ApiService _apiService = ApiService();
   AnalysisResult? _analysisResult;
   bool _isLoading = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedData();
+  }
+
+  // Retrieve cached profile inputs and analysis result on startup
+  Future<void> _loadCachedData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final cachedCurrentRole = prefs.getString('cached_current_role');
+    final cachedTargetRole = prefs.getString('cached_target_role');
+    final cachedSkills = prefs.getString('cached_skills');
+    final cachedAnalysisRaw = prefs.getString('cached_analysis');
+
+    setState(() {
+      _currentRoleController.text =
+          cachedCurrentRole ?? 'Junior Frontend Developer';
+      _targetRoleController.text = cachedTargetRole ?? 'Full Stack Engineer';
+      _skillsController.text =
+          cachedSkills ?? 'HTML, CSS, JavaScript, React, Git';
+
+      if (cachedAnalysisRaw != null) {
+        try {
+          final decoded = jsonDecode(cachedAnalysisRaw) as Map<String, dynamic>;
+          _analysisResult = AnalysisResult.fromJson(decoded);
+        } catch (_) {
+          // If cached data is corrupted, ignore and proceed
+        }
+      }
+    });
+  }
+
+  // Persist latest analysis and form state to browser local storage
+  Future<void> _persistData(AnalysisResult result) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final payload = {
+      'match_score': result.matchScore,
+      'missing_skills': result.missingSkills,
+      'recommended_projects': result.recommendedProjects,
+      'learning_roadmap': result.learningRoadmap,
+      'summary': result.summary,
+    };
+
+    await prefs.setString('cached_analysis', jsonEncode(payload));
+    await prefs.setString(
+      'cached_current_role',
+      _currentRoleController.text.trim(),
+    );
+    await prefs.setString(
+      'cached_target_role',
+      _targetRoleController.text.trim(),
+    );
+    await prefs.setString('cached_skills', _skillsController.text.trim());
+  }
 
   Future<void> _handleAnalyze() async {
     if (!_formKey.currentState!.validate()) return;
@@ -60,19 +115,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     try {
-      final skillsList = _skillsController.text
-          .split(',')
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty)
-          .toList();
-
       final profile = CareerProfile(
         currentRole: _currentRoleController.text.trim(),
         targetRole: _targetRoleController.text.trim(),
-        skills: skillsList.join(', '),
+        skills: _skillsController.text.trim(),
       );
 
       final result = await _apiService.sendProfile(profile);
+      await _persistData(result);
+
       setState(() {
         _analysisResult = result;
       });
@@ -128,7 +179,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left Sidebar / Form Intake
+          // Left Sidebar Form
           SizedBox(
             width: 400,
             child: Card(
@@ -215,7 +266,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
 
-          // Right Dashboard Content
+          // Right Output Pane
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
@@ -235,7 +286,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Synthesizing career gap analysis with Gemini 2.5 Flash...'),
+            Text('Synthesizing career gap analysis with Gemini...'),
           ],
         ),
       );
@@ -417,7 +468,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Chronological Stepper Roadmap
+        // Transition Roadmap
         Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
